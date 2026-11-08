@@ -7,3 +7,4 @@ gid="$(stat -c %g "$sock")"
 grp="$(getent group "$gid" | cut -d: -f1 || true)"
 [ -n "$grp" ] || { groupadd -g "$gid" hostdocker; grp=hostdocker; }
 usermod -aG "$grp" abc
+if [ -n "${DEV_USER:-}" ] && getent passwd "$DEV_USER" >/dev/null; then usermod -aG "$grp" "$DEV_USER"; fi

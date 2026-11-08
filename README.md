@@ -9,6 +9,7 @@ linuxserver/webtop(XFCE 浏览器桌面)+ SSH + Go / Rust / Node / Python / JDK 
 - 桌面用户 `abc`,home `/config`;web 桌面 3001(https)/3000;SSH 22(仅公钥,用户 `abc`)。
 - 默认值在构建时写进镜像,运行时可用 `-e` 或 `.env` 覆盖:
   `TZ`(UTC)、`PUID`/`PGID`(1000)、`CUSTOM_USER`(dev)、`PASSWORD`、`SSH_PUBLIC_KEY`(多个用 `\n` 分隔)。
+- 新增登录用户:设 `DEV_USER`(可选 `DEV_PASSWORD`、`DEV_SUDO`、`DEV_UID`/`DEV_GID`/`DEV_HOME`,见 `.env.example`)。默认与 `abc` 同 uid、共用 home 和公钥,SSH 可用 `DEV_USER` 登录。
 - 也可把公钥放进 `/config/.ssh/authorized_keys`。
 - 挂 `/etc/ssh/hostkeys` 可持久化 host key;挂 `/var/run/docker.sock` 时 `abc` 自动加入对应组。
 - 其余(网络、端口、挂载)自行决定,见 `compose.yml` 示例。

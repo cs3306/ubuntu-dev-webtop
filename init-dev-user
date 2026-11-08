@@ -1,0 +1,40 @@
+#!/usr/bin/with-contenv bash
+# 通过环境变量新增一个登录用户(可选,不设 DEV_USER 则什么都不做)。每次启动都会执行。
+#   DEV_USER      用户名
+#   DEV_UID/GID   默认等于 abc 的 uid/gid(即 PUID/PGID):与 abc 共享 home 和文件权限,whoami 显示新名字
+#                 设成别的值则创建独立 uid 的用户
+#   DEV_HOME      默认 /config
+#   DEV_PASSWORD  密码(可选;不设则无法用密码登录/sudo,SSH 密钥仍可用)
+#   DEV_SUDO      nopasswd(默认) | password | none
+set -eu
+name="${DEV_USER:-}"
+[ -n "$name" ] || exit 0
+if ! [[ "$name" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] || [ "$name" = abc ] || [ "$name" = root ]; then
+  echo "[dev-user] 无效的 DEV_USER: $name" >&2; exit 0
+fi
+auid="$(id -u abc)"; agid="$(id -g abc)"
+uid="${DEV_UID:-$auid}"; gid="${DEV_GID:-$agid}"; home="${DEV_HOME:-/config}"
+
+sed -i "/^${name}:/d" /etc/passwd /etc/shadow
+if [ "$uid" = "$auid" ]; then
+  sed -i "/^abc:/i ${name}:x:${uid}:${gid}::${home}:/bin/bash" /etc/passwd
+  echo "${name}:*:19000:0:99999:7:::" >> /etc/shadow
+else
+  getent group "$gid" >/dev/null || groupadd -g "$gid" "$name"
+  useradd -o -u "$uid" -g "$gid" -d "$home" -m -s /bin/bash "$name"
+  usermod -p '*' "$name"
+fi
+
+[ -z "${DEV_PASSWORD:-}" ] || echo "${name}:${DEV_PASSWORD}" | chpasswd
+
+case "${DEV_SUDO:-nopasswd}" in
+  nopasswd) echo "${name} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-dev-user ;;
+  password) echo "${name} ALL=(ALL) ALL" > /etc/sudoers.d/90-dev-user ;;
+  *)        : > /etc/sudoers.d/90-dev-user ;;
+esac
+chmod 440 /etc/sudoers.d/90-dev-user
+
+# SSH:允许登录,公钥与 abc 共用(SSH_PUBLIC_KEY 或 /config/.ssh/authorized_keys)
+sed -i "s/^AllowUsers .*/AllowUsers abc ${name}/" /etc/ssh/sshd_config.d/10-dev.conf
+mkdir -p /etc/ssh/authorized_keys
+ln -sf abc "/etc/ssh/authorized_keys/${name}"

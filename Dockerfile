@@ -77,6 +77,7 @@ RUN usermod -s /bin/bash -p '*' abc \
 
 COPY sshd_dev.conf /etc/ssh/sshd_config.d/10-dev.conf
 COPY --chmod=0755 svc-sshd /custom-services.d/sshd
+COPY --chmod=0755 init-dev-user /custom-cont-init.d/10-dev-user
 COPY --chmod=0755 init-docker-sock /custom-cont-init.d/20-docker-sock
 
 # ---- 默认配置(放最后一层:改这些只重跑本层,IDE 层走缓存)
