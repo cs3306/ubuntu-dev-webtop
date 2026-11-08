@@ -69,6 +69,43 @@ RUN install-jb PCP pycharm    pycharm
 RUN install-jb RR  rustrover  rustrover
 RUN install-jb CL  clion      clion
 
+# ---- 办公 / PDF / OCR / 字体(WITH_OFFICE=0 可跳过)
+ARG WITH_OFFICE=1
+ARG APT_EXTRA=
+RUN if [ "$WITH_OFFICE" = 1 ]; then \
+      apt-get update && apt-get install -y --no-install-recommends \
+        libreoffice-writer libreoffice-calc libreoffice-impress libreoffice-draw libreoffice-gtk3 libreoffice-l10n-zh-cn \
+        evince poppler-utils qpdf ghostscript mupdf-tools pdftk-java \
+        tesseract-ocr tesseract-ocr-eng tesseract-ocr-chi-sim ocrmypdf imagemagick librsvg2-bin graphviz \
+        fonts-noto-cjk fonts-noto-color-emoji fonts-liberation2 fonts-dejavu fonts-wqy-microhei \
+ && rm -rf /var/lib/apt/lists/*; \
+    fi
+ARG PIP_EXTRA=
+RUN if [ "$WITH_OFFICE" = 1 ]; then \
+      pip3 install --no-cache-dir --break-system-packages \
+        openpyxl xlsxwriter python-docx python-pptx pypdf pdfplumber reportlab pandas matplotlib $PIP_EXTRA; \
+    fi
+RUN if [ -n "$APT_EXTRA" ]; then \
+      apt-get update && apt-get install -y --no-install-recommends $APT_EXTRA && rm -rf /var/lib/apt/lists/*; \
+    fi
+
+# ---- LaTeX(不含文档包以省空间;TEXLIVE_PKG 设为空可跳过,或换成 texlive-latex-extra 等小集合)
+ARG TEXLIVE_PKG="texlive-full latexmk biber chktex xindy texstudio"
+RUN if [ -n "$TEXLIVE_PKG" ]; then \
+      apt-get update && apt-get install -y --no-install-recommends $TEXLIVE_PKG \
+ && rm -rf /var/lib/apt/lists/*; \
+    fi
+
+# ---- JetBrains 插件(装进各 IDE 自己的 plugins 目录;改 JB_PLUGINS* 只重跑本层)
+#      兼容性按 IDE 版本自动匹配,找不到的会跳过并在日志里标 SKIP
+ARG JB_PLUGINS="zielu.gittoolbox com.halirutan.keypromoterx ru.adelf.idea.dotenv org.sonarlint.idea izhangzhihao.rainbow.brackets nl.hannahsten.texifyidea"
+ARG JB_PLUGINS_EXTRA=
+COPY --chmod=0755 install-jb-plugins /usr/local/bin/install-jb-plugins
+RUN for d in idea goland pycharm rustrover clion; do install-jb-plugins "/opt/$d" $JB_PLUGINS $JB_PLUGINS_EXTRA; done; \
+    install-jb-plugins /opt/idea org.jetbrains.plugins.go Pythonid com.jetbrains.rust; \
+    install-jb-plugins /opt/pycharm org.jetbrains.plugins.go; \
+    install-jb-plugins /opt/clion com.jetbrains.rust
+
 # ---- 用户 abc(webtop 桌面用户)可 ssh 登录、免密 sudo
 RUN usermod -s /bin/bash -p '*' abc \
  && echo 'abc ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/99-dev-nopasswd && chmod 440 /etc/sudoers.d/99-dev-nopasswd \
@@ -84,6 +121,7 @@ COPY sshd_dev.conf /etc/ssh/sshd_config.d/10-dev.conf
 COPY --chmod=0755 svc-sshd /custom-services.d/sshd
 COPY --chmod=0755 init-dev-user /custom-cont-init.d/10-dev-user
 COPY --chmod=0755 init-docker-sock /custom-cont-init.d/20-docker-sock
+COPY --chmod=0755 init-user-hooks /custom-cont-init.d/90-user-hooks
 
 # ---- 默认配置(放最后一层:改这些只重跑本层,IDE 层走缓存)
 # 构建时由 GitHub 的 secret/variable 传入;运行时用 -e / .env 可覆盖

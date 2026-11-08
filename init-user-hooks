@@ -1,0 +1,23 @@
+#!/usr/bin/with-contenv bash
+# 运行时扩展(失败只警告,不影响启动):
+#   APT_INSTALL / PIP_INSTALL / NPM_INSTALL   空格分隔,每次启动按需安装
+#   /config/init.d/*.sh                       持久化的自定义启动脚本(root 执行,放卷里重建不丢)
+if [ -n "${APT_INSTALL:-}" ]; then
+  echo "[user-hooks] apt: $APT_INSTALL"
+  apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends $APT_INSTALL \
+    || echo "[user-hooks] apt 安装失败"
+fi
+if [ -n "${PIP_INSTALL:-}" ]; then
+  echo "[user-hooks] pip: $PIP_INSTALL"
+  pip3 install --no-cache-dir --break-system-packages $PIP_INSTALL || echo "[user-hooks] pip 安装失败"
+fi
+if [ -n "${NPM_INSTALL:-}" ]; then
+  echo "[user-hooks] npm: $NPM_INSTALL"
+  npm install -g $NPM_INSTALL || echo "[user-hooks] npm 安装失败"
+fi
+for f in /config/init.d/*.sh; do
+  [ -f "$f" ] || continue
+  echo "[user-hooks] run $f"
+  bash "$f" || echo "[user-hooks] $f 失败"
+done
+exit 0

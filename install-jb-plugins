@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# install-jb-plugins <IDE目录> <插件ID...>
+# 例: install-jb-plugins /opt/idea zielu.gittoolbox
+# 从 JetBrains Marketplace 下载与该 IDE 版本兼容的插件,放进 <IDE目录>/plugins(对所有用户生效,不被 /config 卷覆盖)。
+# 找不到/不兼容的插件只警告并跳过,不会让构建失败。插件 ID 见 Marketplace 插件页的 "Plugin ID"。
+set -uo pipefail
+ide="${1:?用法: install-jb-plugins <IDE目录> <插件ID...>}"; shift
+info="$ide/product-info.json"
+[ -f "$info" ] || { echo "!! $info 不存在" >&2; exit 1; }
+build="$(sed -n 's/.*"buildNumber"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$info" | head -1)"
+code="$(sed -n 's/.*"productCode"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$info" | head -1)"
+mkdir -p "$ide/plugins"; tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+for id in "$@"; do
+  eff="$(curl -fsSL --retry 3 -o "$tmp/p" -w '%{url_effective}' \
+        "https://plugins.jetbrains.com/pluginManager?action=download&id=${id}&build=${code}-${build}" 2>/dev/null)" \
+    || { echo "-- SKIP $id (${code}-${build} 下载失败/不兼容)"; continue; }
+  case "${eff%%\?*}" in
+    *.jar) cp "$tmp/p" "$ide/plugins/${id}.jar" ;;
+    *)     unzip -qo "$tmp/p" -d "$ide/plugins" || { echo "-- SKIP $id (解压失败)"; continue; } ;;
+  esac
+  echo "++ OK   $id -> $ide"
+done
+chmod -R a+rX "$ide/plugins"
+exit 0

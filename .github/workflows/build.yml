@@ -40,6 +40,11 @@ jobs:
             JB_REFRESH=${{ steps.ts.outputs.m }}
             WEB_PASSWORD=${{ secrets.WEB_PASSWORD || 'changeme' }}
             SSH_PUBLIC_KEY=${{ vars.SSH_PUBLIC_KEY }}
+            WITH_OFFICE=${{ vars.WITH_OFFICE || '1' }}
+            TEXLIVE_PKG=${{ vars.TEXLIVE_PKG != '' && vars.TEXLIVE_PKG || 'texlive-full latexmk biber chktex xindy texstudio' }}
+            APT_EXTRA=${{ vars.APT_EXTRA }}
+            PIP_EXTRA=${{ vars.PIP_EXTRA }}
+            JB_PLUGINS_EXTRA=${{ vars.JB_PLUGINS_EXTRA }}
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/ubuntu-dev-webtop:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/ubuntu-dev-webtop:buildcache,mode=max
           tags: |
