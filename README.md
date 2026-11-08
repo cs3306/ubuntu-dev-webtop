@@ -16,7 +16,7 @@ linuxserver/webtop(XFCE 浏览器桌面)+ SSH + Go / Rust / Node / Python / JDK 
 
 ## GitHub 构建配置(在网页上设,改完 Run workflow 即可,IDE 层走缓存不重下)
 - Secrets:`DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN`、`WEB_PASSWORD`(桌面默认密码,可选)
-- Variables(全部可选):`SSH_PUBLIC_KEY`(默认公钥)、`WITH_OFFICE`(设 0 跳过 LibreOffice/PDF/OCR)、`TEXLIVE_PKG`(默认 `texlive-full ...`,想小一点可设 `texlive-latex-extra texlive-lang-chinese latexmk`)、`APT_EXTRA` / `PIP_EXTRA`(额外系统包 / Python 包,空格分隔)、`JB_PLUGINS_EXTRA`(额外 JetBrains 插件 ID,装进所有 IDE)
+- Variables(全部可选):`SSH_PUBLIC_KEY`(默认公钥)、`WITH_OFFICE`(设 0 跳过 LibreOffice/PDF/OCR)、`TEXLIVE_PKG`(默认 `texlive-full ...`,想小一点可设 `texlive-latex-extra texlive-lang-chinese latexmk`)、`APT_EXTRA` / `PIP_EXTRA`(额外系统包 / Python 包,空格分隔)、`JB_PLUGINS_EXTRA`(额外 JetBrains 插件 ID,装进所有 IDE;ID 含空格时用 `+` 代替)
 
 ## 快速使用
 ```

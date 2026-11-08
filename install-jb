@@ -15,7 +15,13 @@ else
 fi
 echo ">> $code <- $url"
 curl -fL --retry 5 --retry-delay 5 -o /tmp/jb.tgz "$url"
-if exp="$(curl -fsSL "$url.sha256" 2>/dev/null | awk '{print $1}')" && [ -n "$exp" ]; then
+# 校验和:签名 URL 的参数会破坏 ".sha256" 拼接,去掉参数后在两个下载域名上各试一次
+exp=""; base="${url%%\?*}"; rest="${base#*://*/}"
+for h in download.jetbrains.com download-cdn.jetbrains.com; do
+  exp="$(curl -fsSL "https://$h/$rest.sha256" 2>/dev/null | awk '{print $1}')" || exp=""
+  [ "${#exp}" = 64 ] && break; exp=""
+done
+if [ -n "$exp" ]; then
   echo "$exp  /tmp/jb.tgz" | sha256sum -c -
 else
   echo "!! 没取到 sha256,跳过校验" >&2

@@ -104,7 +104,7 @@ RUN if [ -n "$TEXLIVE_PKG" ]; then \
 
 # ---- JetBrains 插件(装进各 IDE 自己的 plugins 目录;改 JB_PLUGINS* 只重跑本层)
 #      兼容性按 IDE 版本自动匹配,找不到的会跳过并在日志里标 SKIP
-ARG JB_PLUGINS="zielu.gittoolbox com.halirutan.keypromoterx ru.adelf.idea.dotenv org.sonarlint.idea izhangzhihao.rainbow.brackets nl.hannahsten.texifyidea"
+ARG JB_PLUGINS="zielu.gittoolbox Key+Promoter+X ru.adelf.idea.dotenv org.sonarlint.idea izhangzhihao.rainbow.brackets nl.rubensten.texifyidea"
 ARG JB_PLUGINS_EXTRA=
 COPY --chmod=0755 install-jb-plugins /usr/local/bin/install-jb-plugins
 RUN for d in idea goland pycharm rustrover clion; do install-jb-plugins "/opt/$d" $JB_PLUGINS $JB_PLUGINS_EXTRA; done; \

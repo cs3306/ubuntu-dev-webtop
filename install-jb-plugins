@@ -11,11 +11,13 @@ build="$(sed -n 's/.*"buildNumber"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "
 code="$(sed -n 's/.*"productCode"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$info" | head -1)"
 mkdir -p "$ide/plugins"; tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 for id in "$@"; do
-  eff="$(curl -fsSL --retry 3 -o "$tmp/p" -w '%{url_effective}' \
-        "https://plugins.jetbrains.com/pluginManager?action=download&id=${id}&build=${code}-${build}" 2>/dev/null)" \
+  id="${id//+/ }"   # 含空格的 ID 用 + 代替,如 Key+Promoter+X
+  eff="$(curl -fsSL -G --retry 3 -o "$tmp/p" -w '%{url_effective}' \
+        --data-urlencode "action=download" --data-urlencode "id=${id}" --data-urlencode "build=${code}-${build}" \
+        "https://plugins.jetbrains.com/pluginManager" 2>/dev/null)" \
     || { echo "-- SKIP $id (${code}-${build} 下载失败/不兼容)"; continue; }
   case "${eff%%\?*}" in
-    *.jar) cp "$tmp/p" "$ide/plugins/${id}.jar" ;;
+    *.jar) cp "$tmp/p" "$ide/plugins/${id// /_}.jar" ;;
     *)     unzip -qo "$tmp/p" -d "$ide/plugins" || { echo "-- SKIP $id (解压失败)"; continue; } ;;
   esac
   echo "++ OK   $id -> $ide"
