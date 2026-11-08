@@ -39,6 +39,7 @@ docker compose pull && docker compose up -d      # 或 docker compose build
 ## 版本与更新(默认不自动更新)
 - 镜像 tag:`latest` 和 `r<构建序号>`;想锁定就在 compose 里用 `r12` 这类 tag,不用 `latest`。
 - 缓存:没改相关层就复用,IDE / Go / Node 版本不变。
+- JetBrains Toolbox App 也在镜像里(桌面菜单 / 终端 `jetbrains-toolbox`),用它装的 IDE 在 `/config` 卷中,重建容器不丢,可自行升级或多版本并存;版本参数 `JB_TOOLBOX_VERSION`。与 `/opt` 里预装的 IDE 互不影响。
 - 固定 IDE 版本:GitHub Variables 设 `JB_IDEA_VERSION` / `JB_GOLAND_VERSION` / `JB_PYCHARM_VERSION` / `JB_RUSTROVER_VERSION` / `JB_CLION_VERSION`(如 `2025.2.4`,留空 = latest);本地用 `--build-arg JB_IDEA_VERSION=2025.2.4`。Go / Node 用 `GO_VERSION` / `NODE_MAJOR` 构建参数。
 - 通过构建拿最新:Actions → Run workflow 勾选 `refresh_ide`;或把 Dockerfile 里 `ARG JB_REFRESH=1` 数字加 1 再 push。
 - 容器内手动更新(重建容器后丢失,长期用请固定到构建参数):

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# install-jb-toolbox [版本|build|latest]   安装 JetBrains Toolbox App 到 /opt/jetbrains-toolbox
+set -euo pipefail
+ver="${1:-latest}"
+if [ "$ver" = latest ] || [ -z "$ver" ]; then
+  url="$(curl -fsSIL -o /dev/null -w '%{url_effective}' 'https://data.services.jetbrains.com/products/download?platform=linux&code=TBA')"
+else
+  url="$(curl -fsSL 'https://data.services.jetbrains.com/products/releases?code=TBA&type=release&latest=false' \
+        | jq -r --arg v "$ver" '.[][] | select(.version==$v or .build==$v) | .downloads.linux.link' | head -1)"
+  [ -n "$url" ] || { echo "!! 找不到 Toolbox 版本 $ver" >&2; exit 1; }
+fi
+echo ">> TBA <- $url"
+curl -fL --retry 5 --retry-delay 5 -o /tmp/tb.tgz "$url"
+if exp="$(curl -fsSL "$url.sha256" 2>/dev/null | awk '{print $1}')" && [ -n "$exp" ]; then
+  echo "$exp  /tmp/tb.tgz" | sha256sum -c -
+else
+  echo "!! 没取到 sha256,跳过校验" >&2
+fi
+dest=/opt/jetbrains-toolbox; rm -rf "$dest"; mkdir -p "$dest"
+tar -xzf /tmp/tb.tgz -C "$dest" --strip-components=1 --no-same-owner; rm -f /tmp/tb.tgz
+bin="$(find "$dest" -maxdepth 2 -type f -name jetbrains-toolbox | head -1)"
+[ -n "$bin" ] || { echo "!! 压缩包里没找到 jetbrains-toolbox" >&2; exit 1; }
+chmod -R a+rX "$dest"; chmod a+x "$bin"
+ln -sf "$bin" /usr/local/bin/jetbrains-toolbox
+printf '[Desktop Entry]\nVersion=1.0\nType=Application\nName=JetBrains Toolbox\nExec=%s\nTerminal=false\nCategories=Development;\nStartupNotify=true\n' \
+  "$bin" > /usr/share/applications/jetbrains-toolbox.desktop

@@ -75,6 +75,14 @@ RUN install-jb PCP pycharm pycharm "$JB_PYCHARM_VERSION"
 RUN install-jb RR rustrover rustrover "$JB_RUSTROVER_VERSION"
 RUN install-jb CL clion clion "$JB_CLION_VERSION"
 
+# ---- JetBrains Toolbox App(用它可在容器里管理/升级/多版本 IDE,装到 /config 卷里,重建不丢)
+ARG JB_TOOLBOX_VERSION=latest
+COPY --chmod=0755 install-jb-toolbox /usr/local/bin/install-jb-toolbox
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      libfuse2t64 libnss3 libxss1 libasound2t64 libgbm1 libxkbcommon-x11-0 libxcb-cursor0 \
+ && rm -rf /var/lib/apt/lists/* \
+ && install-jb-toolbox "$JB_TOOLBOX_VERSION"
+
 # ---- 办公 / PDF / OCR / 字体(WITH_OFFICE=0 可跳过)
 ARG WITH_OFFICE=1
 ARG APT_EXTRA=

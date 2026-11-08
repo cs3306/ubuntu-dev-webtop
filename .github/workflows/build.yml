@@ -37,6 +37,7 @@ jobs:
           push: true
           build-args: |
             JB_REFRESH=${{ inputs.refresh_ide && github.run_id || vars.JB_REFRESH || '1' }}
+            JB_TOOLBOX_VERSION=${{ vars.JB_TOOLBOX_VERSION || 'latest' }}
             JB_IDEA_VERSION=${{ vars.JB_IDEA_VERSION || 'latest' }}
             JB_GOLAND_VERSION=${{ vars.JB_GOLAND_VERSION || 'latest' }}
             JB_PYCHARM_VERSION=${{ vars.JB_PYCHARM_VERSION || 'latest' }}
