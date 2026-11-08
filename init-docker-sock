@@ -1,0 +1,9 @@
+#!/usr/bin/with-contenv bash
+# 如果挂了 docker.sock,把 abc 加进对应 gid 的组
+sock=/var/run/docker.sock
+[ -S "$sock" ] || exit 0
+gid="$(stat -c %g "$sock")"
+[ "$gid" != 0 ] || { echo "[docker-sock] socket gid=0,跳过(用 sudo docker)"; exit 0; }
+grp="$(getent group "$gid" | cut -d: -f1 || true)"
+[ -n "$grp" ] || { groupadd -g "$gid" hostdocker; grp=hostdocker; }
+usermod -aG "$grp" abc

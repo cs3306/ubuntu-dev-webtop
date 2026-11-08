@@ -1,0 +1,15 @@
+#!/usr/bin/with-contenv bash
+# s6 自定义服务:sshd。公钥来自环境变量 SSH_PUBLIC_KEY(多个用换行或字面 \n 分隔),
+# 也可以直接放进 /config/.ssh/authorized_keys。host key 持久化在卷 /etc/ssh/hostkeys。
+mkdir -p /run/sshd /etc/ssh/hostkeys /etc/ssh/authorized_keys
+for t in ed25519 rsa; do
+  f="/etc/ssh/hostkeys/ssh_host_${t}_key"
+  [ -f "$f" ] || ssh-keygen -q -t "$t" -N '' -f "$f"
+done
+: > /etc/ssh/authorized_keys/abc
+[ -z "${SSH_PUBLIC_KEY:-}" ] || printf '%b\n' "$SSH_PUBLIC_KEY" > /etc/ssh/authorized_keys/abc
+chmod 644 /etc/ssh/authorized_keys/abc
+if [ ! -s /etc/ssh/authorized_keys/abc ] && [ ! -s /config/.ssh/authorized_keys ]; then
+  echo "[sshd] WARNING: 未设置 SSH_PUBLIC_KEY,无法 ssh 登录" >&2
+fi
+exec /usr/sbin/sshd -D -e

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# install-jb <产品代码> <目录名> <启动脚本名>   例: install-jb GO goland goland
+set -euo pipefail
+code="$1"; dir="$2"; bin="$3"
+case "$(dpkg --print-architecture)" in arm64) dist=linuxARM64 ;; *) dist=linux ;; esac
+src="https://download.jetbrains.com/product?code=${code}&latest&distribution=${dist}"
+url="$(curl -fsSIL -o /dev/null -w '%{url_effective}' "$src" || true)"; [ -n "$url" ] || url="$src"
+echo ">> $code <- $url"
+curl -fL --retry 5 --retry-delay 5 -o /tmp/jb.tgz "$url"
+if exp="$(curl -fsSL "$url.sha256" 2>/dev/null | awk '{print $1}')" && [ -n "$exp" ]; then
+  echo "$exp  /tmp/jb.tgz" | sha256sum -c -
+else
+  echo "!! 没取到 sha256,跳过校验" >&2
+fi
+dest="/opt/$dir"; rm -rf "$dest"; mkdir -p "$dest"
+tar -xzf /tmp/jb.tgz -C "$dest" --strip-components=1 --no-same-owner
+rm -f /tmp/jb.tgz; chmod -R a+rX "$dest"
+test -x "$dest/bin/$bin.sh"
+ln -sf "$dest/bin/$bin.sh" "/usr/local/bin/$bin"
+icon="$(find "$dest/bin" -maxdepth 1 \( -name '*.svg' -o -name '*.png' \) | head -1)"
+name="$(sed -n 's/^[[:space:]]*"productName"[[:space:]]*:[[:space:]]*"\(.*\)",\?$/\1/p' "$dest/product-info.json" | head -1)"
+printf '[Desktop Entry]\nVersion=1.0\nType=Application\nName=%s\nExec=%s %%f\nIcon=%s\nTerminal=false\nCategories=Development;IDE;\nStartupNotify=true\n' \
+  "${name:-$dir}" "$dest/bin/$bin.sh" "$icon" > "/usr/share/applications/$bin.desktop"
