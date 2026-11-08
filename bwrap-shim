@@ -1,0 +1,22 @@
+#!/bin/bash
+# bwrap 兼容层:容器里 bwrap 无法创建命名空间(AppArmor 拒绝)。
+# 仅对 glycin 图片加载器直接运行(不套沙箱),其它调用原样交给真正的 bwrap。
+orig=("$@")
+setenv=(); clear=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --clearenv) clear=1; shift ;;
+    --setenv) setenv+=("$2=$3"); shift 3 ;;
+    --ro-bind|--ro-bind-try|--bind|--bind-try|--dev-bind|--dev-bind-try|--symlink|--file|--bind-data|--ro-bind-data|--perms-file) shift 3 ;;
+    --unsetenv) shift 2 ;;
+    --dev|--proc|--tmpfs|--mqueue|--dir|--chdir|--seccomp|--remount-ro|--sync-fd|--block-fd|--userns-block-fd|--info-fd|--json-status-fd|--lock-file|--uid|--gid|--hostname|--userns|--userns2|--pidns|--cap-add|--cap-drop|--perms|--size|--chmod|--args) shift 2 ;;
+    --) shift; break ;;
+    --*) shift ;;
+    *) break ;;
+  esac
+done
+case "${1:-}" in
+  /usr/libexec/glycin-loaders/*|/usr/lib/glycin-loaders/*|/usr/lib/*/glycin-loaders/*)
+    if [ "$clear" = 1 ]; then exec env -i "${setenv[@]}" "$@"; else exec env "${setenv[@]}" "$@"; fi ;;
+esac
+exec /usr/bin/bwrap.real "${orig[@]}"

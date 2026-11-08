@@ -75,6 +75,11 @@ RUN usermod -s /bin/bash -p '*' abc \
  && sed -i 's/^\(session\s\+required\s\+pam_loginuid.so\)/session optional pam_loginuid.so/' /etc/pam.d/sshd \
  && mkdir -p /run/sshd /etc/ssh/hostkeys /etc/ssh/authorized_keys
 
+# ---- bwrap 兼容层:Ubuntu 26.04 的 glycin 用 bwrap 沙箱加载图片,
+#      在 Docker 默认 AppArmor 下 bwrap 会失败 → xfce4-panel 崩溃 → 黑屏
+RUN dpkg-divert --local --rename --add /usr/bin/bwrap
+COPY --chmod=0755 bwrap-shim /usr/bin/bwrap
+
 COPY sshd_dev.conf /etc/ssh/sshd_config.d/10-dev.conf
 COPY --chmod=0755 svc-sshd /custom-services.d/sshd
 COPY --chmod=0755 init-dev-user /custom-cont-init.d/10-dev-user
