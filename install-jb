@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
-# install-jb <产品代码> <目录名> <启动脚本名>   例: install-jb GO goland goland
+# install-jb <产品代码> <目录名> <启动脚本名> [版本|build|latest]
+# 例: install-jb GO goland goland            (最新版)
+#     install-jb GO goland goland 2025.2.4   (固定版本,按 version 或 build 号匹配)
 set -euo pipefail
-code="$1"; dir="$2"; bin="$3"
+code="$1"; dir="$2"; bin="$3"; ver="${4:-latest}"
 case "$(dpkg --print-architecture)" in arm64) dist=linuxARM64 ;; *) dist=linux ;; esac
-src="https://download.jetbrains.com/product?code=${code}&latest&distribution=${dist}"
-url="$(curl -fsSIL -o /dev/null -w '%{url_effective}' "$src" || true)"; [ -n "$url" ] || url="$src"
+if [ "$ver" = latest ] || [ -z "$ver" ]; then
+  src="https://download.jetbrains.com/product?code=${code}&latest&distribution=${dist}"
+  url="$(curl -fsSIL -o /dev/null -w '%{url_effective}' "$src" || true)"; [ -n "$url" ] || url="$src"
+else
+  url="$(curl -fsSL "https://data.services.jetbrains.com/products/releases?code=${code}&type=release&latest=false" \
+        | jq -r --arg v "$ver" --arg d "$dist" '.[][] | select(.version==$v or .build==$v) | .downloads[$d].link' | head -1)"
+  [ -n "$url" ] || { echo "!! 找不到 $code 版本 $ver" >&2; exit 1; }
+fi
 echo ">> $code <- $url"
 curl -fL --retry 5 --retry-delay 5 -o /tmp/jb.tgz "$url"
 if exp="$(curl -fsSL "$url.sha256" 2>/dev/null | awk '{print $1}')" && [ -n "$exp" ]; then

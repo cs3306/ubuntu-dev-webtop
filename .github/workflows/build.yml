@@ -4,8 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  schedule:
-    - cron: '17 9 1 * *'   # 每月 1 号重建,刷新 IDE / Go / Node 到最新
+    inputs:
+      refresh_ide:
+        description: '重新下载 IDE / Go / Node 等 latest(默认复用缓存,版本不变)'
+        type: boolean
+        default: false
 
 jobs:
   image:
@@ -27,17 +30,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Month stamp
-        id: ts
-        run: echo "m=$(date +%Y-%m)" >> "$GITHUB_OUTPUT"
-
       - uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64
           push: true
           build-args: |
-            JB_REFRESH=${{ steps.ts.outputs.m }}
+            JB_REFRESH=${{ inputs.refresh_ide && github.run_id || vars.JB_REFRESH || '1' }}
+            JB_IDEA_VERSION=${{ vars.JB_IDEA_VERSION || 'latest' }}
+            JB_GOLAND_VERSION=${{ vars.JB_GOLAND_VERSION || 'latest' }}
+            JB_PYCHARM_VERSION=${{ vars.JB_PYCHARM_VERSION || 'latest' }}
+            JB_RUSTROVER_VERSION=${{ vars.JB_RUSTROVER_VERSION || 'latest' }}
+            JB_CLION_VERSION=${{ vars.JB_CLION_VERSION || 'latest' }}
             WEB_PASSWORD=${{ secrets.WEB_PASSWORD || 'changeme' }}
             SSH_PUBLIC_KEY=${{ vars.SSH_PUBLIC_KEY }}
             WITH_OFFICE=${{ vars.WITH_OFFICE || '1' }}
@@ -49,4 +53,4 @@ jobs:
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/ubuntu-dev-webtop:buildcache,mode=max
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/ubuntu-dev-webtop:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/ubuntu-dev-webtop:${{ steps.ts.outputs.m }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/ubuntu-dev-webtop:r${{ github.run_number }}

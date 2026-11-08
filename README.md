@@ -2,7 +2,7 @@
 
 linuxserver/webtop(XFCE 浏览器桌面)+ SSH + Go / Rust / Node / Python / JDK 21 / C++ 工具链 + IntelliJ IDEA / GoLand / PyCharm / RustRover / CLion 的开发镜像。
 
-镜像:Docker Hub `<你的用户名>/ubuntu-dev-webtop`(push main 自动构建,每月 1 号重建刷新 IDE)。
+镜像:Docker Hub `<你的用户名>/ubuntu-dev-webtop`(push main 自动构建;**不再定时重建**,版本不会自己变)。
 镜像含 JetBrains IDE,**Docker Hub 仓库保持 Private**。
 
 ## 镜像约定
@@ -35,3 +35,11 @@ docker compose pull && docker compose up -d      # 或 docker compose build
 - 运行期(`.env`):`APT_INSTALL` / `PIP_INSTALL` / `NPM_INSTALL`(空格分隔,每次启动安装)。
 - 持久脚本:把 `*.sh` 放进 `/config/init.d/`(在卷里,重建不丢,root 启动时执行),例如装插件:`install-jb-plugins /opt/goland <插件ID>`。
 - 也可自行向 `/custom-cont-init.d/`(单个文件挂载,勿挂整个目录以免覆盖内置脚本)和 `/custom-services.d/` 添加启动脚本。
+
+## 版本与更新(默认不自动更新)
+- 镜像 tag:`latest` 和 `r<构建序号>`;想锁定就在 compose 里用 `r12` 这类 tag,不用 `latest`。
+- 缓存:没改相关层就复用,IDE / Go / Node 版本不变。
+- 固定 IDE 版本:GitHub Variables 设 `JB_IDEA_VERSION` / `JB_GOLAND_VERSION` / `JB_PYCHARM_VERSION` / `JB_RUSTROVER_VERSION` / `JB_CLION_VERSION`(如 `2025.2.4`,留空 = latest);本地用 `--build-arg JB_IDEA_VERSION=2025.2.4`。Go / Node 用 `GO_VERSION` / `NODE_MAJOR` 构建参数。
+- 通过构建拿最新:Actions → Run workflow 勾选 `refresh_ide`;或把 Dockerfile 里 `ARG JB_REFRESH=1` 数字加 1 再 push。
+- 容器内手动更新(重建容器后丢失,长期用请固定到构建参数):
+  `sudo install-jb GO goland goland [版本]`,插件随后 `sudo install-jb-plugins /opt/goland <插件ID...>`。

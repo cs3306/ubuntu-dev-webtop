@@ -4,8 +4,14 @@ FROM lscr.io/linuxserver/webtop:ubuntu-xfce
 ARG DEBIAN_FRONTEND=noninteractive
 ARG NODE_MAJOR=24
 ARG GO_VERSION=latest
-# 改这个数字可让下面的 IDE 层重新下载最新版(否则 docker 缓存会一直用旧的)
+# IDE 版本:latest = 构建时的最新版;也可固定,如 2025.2.4(或 build 号)。
+# 想刷新 "latest":把下面 JB_REFRESH 的数字加 1(或在 GitHub Actions 手动运行时勾选 refresh_ide)
 ARG JB_REFRESH=1
+ARG JB_IDEA_VERSION=latest
+ARG JB_GOLAND_VERSION=latest
+ARG JB_PYCHARM_VERSION=latest
+ARG JB_RUSTROVER_VERSION=latest
+ARG JB_CLION_VERSION=latest
 
 USER root
 
@@ -63,11 +69,11 @@ RUN { \
 # ---- JetBrains IDE(每个一层,失败可单独重试)
 COPY --chmod=0755 install-jb /usr/local/bin/install-jb
 ARG JB_REFRESH
-RUN install-jb IIU idea       idea
-RUN install-jb GO  goland     goland
-RUN install-jb PCP pycharm    pycharm
-RUN install-jb RR  rustrover  rustrover
-RUN install-jb CL  clion      clion
+RUN install-jb IIU idea idea "$JB_IDEA_VERSION"
+RUN install-jb GO goland goland "$JB_GOLAND_VERSION"
+RUN install-jb PCP pycharm pycharm "$JB_PYCHARM_VERSION"
+RUN install-jb RR rustrover rustrover "$JB_RUSTROVER_VERSION"
+RUN install-jb CL clion clion "$JB_CLION_VERSION"
 
 # ---- 办公 / PDF / OCR / 字体(WITH_OFFICE=0 可跳过)
 ARG WITH_OFFICE=1
